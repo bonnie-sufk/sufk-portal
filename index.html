@@ -563,7 +563,7 @@ function setSyncStatus(s) {
 }
 
 /* ── LIVE LISTENERS ── */
-onSnapshot(query(invCol, orderBy("maincat"), orderBy("subcat"), orderBy("name")), snap => {
+onSnapshot(query(invCol, orderBy("name")), snap => {
   inventory = snap.docs.map(d => ({ firestoreId: d.id, ...d.data() }));
   renderCatPills();
   renderCatalog();
