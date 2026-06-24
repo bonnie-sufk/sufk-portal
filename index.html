@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Speak Up for Kids — Donations Portal</title>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
   :root {
     --green:      #376D3D;
     --green-h:    #2A5A30;
@@ -25,12 +25,17 @@
     --muted:      #5A7A5C;
     --danger:     #C0392B;
     --danger-bg:  #FDEAEA;
+    --purple-bg:  #EEF0FF;
+    --purple-fg:  #3C3489;
+    --amber-bg:   #FEF3DC;
+    --amber-fg:   #8B5E00;
+    --blue-bg:    #E3F2FD;
+    --blue-fg:    #0D47A1;
   }
-
   html, body { height:100%; font-family:'Inter',sans-serif; background:var(--page-bg); color:var(--dark-teal); }
   input, select, textarea, button { font-family:inherit; }
 
-  /* ── LOADING ── */
+  /* LOADING */
   #loading-overlay {
     position:fixed; inset:0; background:var(--dark-teal);
     display:flex; flex-direction:column; align-items:center; justify-content:center;
@@ -47,249 +52,174 @@
   @keyframes pulse  { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
   @keyframes bounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-10px)} }
 
-  /* ── HEADER ── */
-  .header {
-    background:var(--green); padding:0 24px; height:62px;
-    display:flex; align-items:center; justify-content:space-between;
-    position:sticky; top:0; z-index:100;
-    box-shadow:0 3px 16px rgba(23,52,54,.30);
-  }
+  /* HEADER */
+  .header { background:var(--green); padding:0 24px; height:62px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; box-shadow:0 3px 16px rgba(23,52,54,.30); }
   .header-brand { display:flex; align-items:center; gap:12px; }
-  .header-logo {
-    width:42px; height:42px; background:rgba(255,255,255,0.95);
-    border:1.5px solid rgba(255,255,255,0.30); border-radius:12px;
-    display:flex; align-items:center; justify-content:center;
-    overflow:hidden; padding:3px; flex-shrink:0;
-  }
+  .header-logo { width:42px; height:42px; background:rgba(255,255,255,0.95); border:1.5px solid rgba(255,255,255,0.30); border-radius:12px; display:flex; align-items:center; justify-content:center; overflow:hidden; padding:3px; flex-shrink:0; }
   .header-logo img { width:100%; height:100%; object-fit:contain; }
-  .header-title { font-family:'Nunito',sans-serif; font-weight:900; font-size:17px; color:#fff; line-height:1.15; letter-spacing:-.01em; }
+  .header-title { font-family:'Nunito',sans-serif; font-weight:900; font-size:17px; color:#fff; line-height:1.15; }
   .header-sub   { font-size:11px; color:rgba(255,255,255,0.62); font-weight:500; }
   .header-right { display:flex; align-items:center; gap:16px; }
   .sync-label   { font-size:11px; color:rgba(255,255,255,.65); font-weight:600; display:flex; align-items:center; gap:5px; }
   .sync-dot { width:8px; height:8px; border-radius:50%; background:var(--yellow); transition:background .3s; }
   .sync-dot.live    { background:#6EE77A; }
   .sync-dot.syncing { background:#fff; animation:pulse 1s infinite; }
-  .cart-pill {
-    background:var(--yellow); color:var(--dark-teal); font-size:12.5px;
-    font-weight:900; font-family:'Nunito',sans-serif; padding:6px 16px;
-    border-radius:999px; border:none; cursor:pointer; display:none;
-    align-items:center; gap:6px; transition:background .15s,transform .1s;
-    box-shadow:0 2px 10px rgba(0,0,0,.14);
-  }
+  .cart-pill { background:var(--yellow); color:var(--dark-teal); font-size:12.5px; font-weight:900; font-family:'Nunito',sans-serif; padding:6px 16px; border-radius:999px; border:none; cursor:pointer; display:none; align-items:center; gap:6px; transition:background .15s,transform .1s; box-shadow:0 2px 10px rgba(0,0,0,.14); }
   .cart-pill:hover { background:#e8b520; transform:translateY(-1px); }
   .cart-pill.show  { display:inline-flex; }
 
-  /* ── TABS ── */
+  /* TABS */
   .tab-bar { background:var(--dark-teal); padding:0 24px; display:flex; border-top:1px solid rgba(255,255,255,0.08); overflow-x:auto; }
-  .tab {
-    padding:10px 18px; font-size:13px; font-weight:700; font-family:'Nunito',sans-serif;
-    color:rgba(255,255,255,0.50); cursor:pointer; border-bottom:3px solid transparent;
-    transition:all .15s; user-select:none; white-space:nowrap;
-  }
+  .tab { padding:10px 16px; font-size:13px; font-weight:700; font-family:'Nunito',sans-serif; color:rgba(255,255,255,0.50); cursor:pointer; border-bottom:3px solid transparent; transition:all .15s; user-select:none; white-space:nowrap; }
   .tab:hover  { color:rgba(255,255,255,.80); }
   .tab.active { color:#fff; border-bottom-color:var(--yellow); }
 
-  /* ── VIEWS ── */
+  /* VIEWS */
   .view { display:none; padding:24px; max-width:1200px; margin:0 auto; }
   .view.active { display:block; }
   .page-title { font-family:'Nunito',sans-serif; font-weight:900; font-size:22px; color:var(--dark-teal); margin-bottom:3px; letter-spacing:-.02em; }
   .page-sub   { font-size:13px; color:var(--muted); margin-bottom:20px; }
 
-  /* ── SEARCH ── */
-  .search-bar { display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; }
-  .search-bar input {
-    flex:1; min-width:180px; padding:9px 14px; border:1.5px solid var(--border);
-    border-radius:10px; font-size:13px; background:var(--white); color:var(--dark-teal); transition:border .15s;
-  }
+  /* SEARCH */
+  .search-bar { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
+  .search-bar input { flex:1; min-width:180px; padding:9px 14px; border:1.5px solid var(--border); border-radius:10px; font-size:13px; background:var(--white); color:var(--dark-teal); transition:border .15s; }
   .search-bar input:focus { outline:none; border-color:var(--green); }
-  .search-bar select {
-    padding:9px 12px; border:1.5px solid var(--border); border-radius:10px;
-    font-size:13px; background:var(--white); color:var(--dark-teal); cursor:pointer;
-  }
+  .search-bar select { padding:9px 12px; border:1.5px solid var(--border); border-radius:10px; font-size:13px; background:var(--white); color:var(--dark-teal); cursor:pointer; }
   .search-bar select:focus { outline:none; border-color:var(--green); }
 
-  /* ── CATEGORY PILLS ── */
+  /* CAT PILLS */
   .cat-pills { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px; }
-  .cat-pill {
-    padding:6px 14px; border-radius:999px; font-size:12px; font-weight:700;
-    font-family:'Nunito',sans-serif; cursor:pointer; border:1.5px solid var(--border);
-    background:var(--white); color:var(--muted); transition:all .15s; user-select:none;
-  }
+  .cat-pill { padding:6px 14px; border-radius:999px; font-size:12px; font-weight:700; font-family:'Nunito',sans-serif; cursor:pointer; border:1.5px solid var(--border); background:var(--white); color:var(--muted); transition:all .15s; user-select:none; }
   .cat-pill:hover { border-color:var(--green); color:var(--green); }
   .cat-pill.active { background:var(--green); color:#fff; border-color:var(--green); }
 
-  /* ── ITEM GRID ── */
+  /* GRID */
   .item-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(185px,1fr)); gap:14px; }
-  .item-card {
-    background:var(--card-bg); border:1.5px solid var(--border);
-    border-radius:16px; padding:14px; display:flex; flex-direction:column;
-    transition:box-shadow .17s,border-color .17s,transform .12s;
-  }
-  .item-card:not(.out-of-stock):hover {
-    border-color:var(--green); box-shadow:0 4px 18px rgba(55,109,61,.14);
-    transform:translateY(-2px); cursor:pointer;
-  }
+  .item-card { background:var(--card-bg); border:1.5px solid var(--border); border-radius:16px; padding:14px; display:flex; flex-direction:column; transition:box-shadow .17s,border-color .17s,transform .12s; }
+  .item-card:not(.out-of-stock):hover { border-color:var(--green); box-shadow:0 4px 18px rgba(55,109,61,.14); transform:translateY(-2px); cursor:pointer; }
   .item-card.out-of-stock { opacity:.5; pointer-events:none; }
-
   .emoji-box { width:100%; height:72px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:30px; margin-bottom:12px; }
-
-  /* Category colors */
-  .ec-food-meals     { background:#FFF8E7; }
-  .ec-food-snacks    { background:#FFF3E0; }
-  .ec-food-beverages { background:#E3F2FD; }
-  .ec-food-treats    { background:#FCE4EC; }
-  .ec-cloth-general  { background:#F3E5F5; }
-  .ec-cloth-outer    { background:#E8EAF6; }
-  .ec-cloth-shoes    { background:#E0F2F1; }
-  .ec-cloth-event    { background:#FFF9C4; }
-  .ec-cloth-under    { background:#F1F8E9; }
-  .ec-elec-devices   { background:#E3F2FD; }
-  .ec-elec-acc       { background:#E8EAF6; }
-  .ec-elec-other     { background:#EDE7F6; }
-  .ec-house-furn     { background:#FBE9E7; }
-  .ec-house-bed      { background:#E0F7FA; }
-  .ec-house-supply   { background:#F9FBE7; }
-  .ec-house-setup    { background:#FFF3E0; }
-  .ec-child-school   { background:#E8F5E9; }
-  .ec-child-basic    { background:#FCE4EC; }
-  .ec-child-play     { background:#EDE7F6; }
-  .ec-travel-luggage { background:#E3F2FD; }
-  .ec-travel-back    { background:#E8F5E9; }
-  .ec-event-celeb    { background:#FFF9C4; }
-  .ec-event-gift     { background:#FCE4EC; }
-  .ec-other          { background:var(--page-bg); }
-
+  .ec-food-meals{background:#FFF8E7;} .ec-food-snacks{background:#FFF3E0;} .ec-food-beverages{background:#E3F2FD;} .ec-food-treats{background:#FCE4EC;}
+  .ec-cloth-general{background:#F3E5F5;} .ec-cloth-outer{background:#E8EAF6;} .ec-cloth-shoes{background:#E0F2F1;} .ec-cloth-event{background:#FFF9C4;} .ec-cloth-under{background:#F1F8E9;}
+  .ec-elec-devices{background:#E3F2FD;} .ec-elec-acc{background:#E8EAF6;} .ec-elec-other{background:#EDE7F6;}
+  .ec-house-furn{background:#FBE9E7;} .ec-house-bed{background:#E0F7FA;} .ec-house-supply{background:#F9FBE7;} .ec-house-setup{background:#FFF3E0;}
+  .ec-child-school{background:#E8F5E9;} .ec-child-basic{background:#FCE4EC;} .ec-child-play{background:#EDE7F6;}
+  .ec-travel-luggage{background:#E3F2FD;} .ec-travel-back{background:#E8F5E9;}
+  .ec-event-celeb{background:#FFF9C4;} .ec-event-gift{background:#FCE4EC;} .ec-other{background:var(--page-bg);}
   .item-name { font-family:'Nunito',sans-serif; font-weight:800; font-size:13px; color:var(--dark-teal); margin-bottom:2px; line-height:1.3; }
-  .item-cat  { font-size:10.5px; color:var(--muted); margin-bottom:6px; line-height:1.4; }
-
+  .item-cat  { font-size:10.5px; color:var(--muted); margin-bottom:6px; }
+  .donor-tag { font-size:10px; font-weight:600; color:var(--blue-fg); background:var(--blue-bg); padding:2px 7px; border-radius:999px; display:inline-block; margin-bottom:6px; }
   .badge { display:inline-block; font-size:10px; font-weight:700; padding:2px 8px; border-radius:999px; }
-  .b-toddler { background:#EBF3EC; color:var(--green-h); }
-  .b-kids    { background:#D4E8D6; color:var(--green-h); }
-  .b-tweens  { background:#FEF3DC; color:#8B5E00; }
-  .b-teens   { background:#EEF0FF; color:#3C3489; }
-  .b-adult   { background:#E3F2FD; color:#0D47A1; }
-  .b-all     { background:#F5F5F5;  color:#555; }
-
+  .b-toddler{background:#EBF3EC;color:var(--green-h);} .b-kids{background:#D4E8D6;color:var(--green-h);}
+  .b-tweens{background:#FEF3DC;color:#8B5E00;} .b-teens{background:#EEF0FF;color:#3C3489;}
+  .b-adult{background:#E3F2FD;color:#0D47A1;} .b-all{background:#F5F5F5;color:#555;}
   .stock-line { font-size:11px; font-weight:600; margin-top:6px; }
-  .stock-ok   { color:var(--green-h); }
-  .stock-no   { color:var(--danger); }
-
-  .add-btn {
-    margin-top:auto; padding-top:10px; width:100%; padding:8px; margin-top:10px;
-    background:var(--green); color:#fff; border:none; border-radius:8px;
-    font-size:12px; font-weight:800; font-family:'Nunito',sans-serif; cursor:pointer; transition:background .15s;
-  }
+  .stock-ok{color:var(--green-h);} .stock-no{color:var(--danger);}
+  .add-btn { margin-top:10px; width:100%; padding:8px; background:var(--green); color:#fff; border:none; border-radius:8px; font-size:12px; font-weight:800; font-family:'Nunito',sans-serif; cursor:pointer; transition:background .15s; }
   .add-btn:hover:not(:disabled) { background:var(--green-h); }
   .add-btn:disabled { background:var(--border); color:var(--muted); cursor:not-allowed; }
-
   .empty-state { text-align:center; padding:48px 24px; color:var(--muted); font-size:14px; grid-column:1/-1; }
   .empty-icon  { font-size:38px; display:block; margin-bottom:10px; }
 
-  /* ── CHECKOUT ── */
-  .checkout-layout { display:grid; grid-template-columns:1fr 300px; gap:20px; align-items:start; }
+  /* CHECKOUT */
+  .checkout-layout { display:grid; grid-template-columns:1fr 320px; gap:20px; align-items:start; }
   @media(max-width:680px){ .checkout-layout{grid-template-columns:1fr;} }
-
   .cart-item-row { display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--border); }
   .cart-item-row:last-child { border-bottom:none; }
-  .ci-emoji { font-size:20px; width:28px; text-align:center; flex-shrink:0; }
-  .ci-name  { font-weight:700; font-size:13px; color:var(--dark-teal); }
-  .ci-sub   { font-size:11px; color:var(--muted); }
-  .ci-info  { flex:1; }
-  .rm-btn   { background:none; border:none; color:var(--muted); cursor:pointer; font-size:17px; padding:5px 7px; border-radius:7px; transition:color .12s,background .12s; line-height:1; }
+  .ci-emoji{font-size:20px;width:28px;text-align:center;flex-shrink:0;}
+  .ci-name{font-weight:700;font-size:13px;color:var(--dark-teal);}
+  .ci-sub{font-size:11px;color:var(--muted);}
+  .ci-info{flex:1;}
+  .rm-btn { background:none; border:none; color:var(--muted); cursor:pointer; font-size:17px; padding:5px 7px; border-radius:7px; transition:color .12s,background .12s; line-height:1; }
   .rm-btn:hover { color:var(--danger); background:var(--danger-bg); }
-
   .form-panel { background:var(--white); border:1.5px solid var(--border); border-radius:16px; padding:20px; }
-  .fp-title   { font-family:'Nunito',sans-serif; font-weight:800; font-size:15px; color:var(--dark-teal); margin-bottom:16px; }
-  .field      { margin-bottom:12px; }
+  .fp-title { font-family:'Nunito',sans-serif; font-weight:800; font-size:15px; color:var(--dark-teal); margin-bottom:16px; }
+  .fp-section { font-family:'Nunito',sans-serif; font-weight:800; font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; margin:14px 0 8px; padding-top:12px; border-top:1px solid var(--border); }
+  .field { margin-bottom:12px; }
   .field label { display:block; font-size:12px; font-weight:600; color:var(--muted); margin-bottom:4px; }
-  .field input,.field select,.field textarea {
-    width:100%; padding:9px 12px; border:1.5px solid var(--border); border-radius:9px;
-    font-size:13px; color:var(--dark-teal); background:var(--white); transition:border .15s;
-  }
+  .field input,.field select,.field textarea { width:100%; padding:9px 12px; border:1.5px solid var(--border); border-radius:9px; font-size:13px; color:var(--dark-teal); background:var(--white); transition:border .15s; }
   .field input:focus,.field select:focus,.field textarea:focus { outline:none; border-color:var(--green); }
   .field textarea { resize:vertical; min-height:58px; }
-
-  .primary-btn {
-    width:100%; padding:11px; background:var(--green); color:#fff; border:none;
-    border-radius:10px; font-size:14px; font-weight:900; font-family:'Nunito',sans-serif;
-    cursor:pointer; transition:background .15s; margin-top:4px;
-  }
+  .primary-btn { width:100%; padding:11px; background:var(--green); color:#fff; border:none; border-radius:10px; font-size:14px; font-weight:900; font-family:'Nunito',sans-serif; cursor:pointer; transition:background .15s; margin-top:4px; }
   .primary-btn:hover:not(:disabled) { background:var(--green-h); }
   .primary-btn:disabled { background:var(--border); color:var(--muted); cursor:not-allowed; }
-
-  .success-banner {
-    background:var(--green-bg); border:1.5px solid var(--green-mid);
-    border-radius:10px; padding:12px 14px; font-size:13px; font-weight:600;
-    color:var(--green-h); margin-bottom:16px; display:none;
-  }
+  .success-banner { background:var(--green-bg); border:1.5px solid var(--green-mid); border-radius:10px; padding:12px 14px; font-size:13px; font-weight:600; color:var(--green-h); margin-bottom:16px; display:none; }
   .saving-spinner { display:none; font-size:12px; color:var(--muted); margin-top:8px; text-align:center; }
   .saving-spinner.show { display:block; }
 
-  /* ── LOG ── */
-  .stat-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:22px; }
+  /* LOG */
+  .stat-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:22px; }
+  @media(max-width:700px){ .stat-grid{grid-template-columns:repeat(2,1fr);} }
   .stat-card { background:var(--dark-teal); border-radius:14px; padding:18px; }
-  .stat-n { font-family:'Nunito',sans-serif; font-size:32px; font-weight:900; color:var(--yellow); line-height:1; }
+  .stat-n { font-family:'Nunito',sans-serif; font-size:28px; font-weight:900; color:var(--yellow); line-height:1; }
   .stat-l { font-size:12px; color:rgba(255,255,255,.65); margin-top:5px; font-weight:500; }
-
   .filter-row { display:flex; align-items:center; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
   .filter-row label { font-size:13px; color:var(--muted); font-weight:500; }
   .filter-row select { padding:8px 12px; border:1.5px solid var(--border); border-radius:9px; font-size:13px; background:var(--white); color:var(--dark-teal); }
-  .export-btn {
-    margin-left:auto; padding:8px 16px; border:1.5px solid var(--border); border-radius:9px;
-    background:var(--white); font-size:12px; font-weight:700; color:var(--dark-teal);
-    cursor:pointer; transition:border-color .15s,background .15s; font-family:'Nunito',sans-serif;
-  }
+  .export-btn { margin-left:auto; padding:8px 16px; border:1.5px solid var(--border); border-radius:9px; background:var(--white); font-size:12px; font-weight:700; color:var(--dark-teal); cursor:pointer; transition:border-color .15s,background .15s; font-family:'Nunito',sans-serif; }
   .export-btn:hover { border-color:var(--green); background:var(--green-bg); }
-
   .log-table-wrap { overflow-x:auto; }
-  .log-table { width:100%; border-collapse:collapse; font-size:13px; background:var(--white); border-radius:14px; overflow:hidden; border:1.5px solid var(--border); }
-  .log-table th { padding:10px 14px; text-align:left; font-size:11px; font-weight:700; color:#fff; letter-spacing:.05em; text-transform:uppercase; background:var(--dark-teal); border-bottom:1.5px solid var(--teal-mid); }
-  .log-table td { padding:10px 14px; border-bottom:1px solid var(--border); color:var(--dark-teal); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:180px; }
+  .log-table { width:100%; border-collapse:collapse; font-size:12px; background:var(--white); border-radius:14px; overflow:hidden; border:1.5px solid var(--border); }
+  .log-table th { padding:10px 12px; text-align:left; font-size:11px; font-weight:700; color:#fff; letter-spacing:.05em; text-transform:uppercase; background:var(--dark-teal); border-bottom:1.5px solid var(--teal-mid); white-space:nowrap; }
+  .log-table td { padding:10px 12px; border-bottom:1px solid var(--border); color:var(--dark-teal); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:150px; }
   .log-table tr:last-child td { border-bottom:none; }
   .log-table tbody tr:hover td { background:var(--green-bg); }
+  .email-status { font-size:10px; font-weight:700; padding:2px 7px; border-radius:999px; }
+  .es-sent    { background:#E8F5E9; color:#2E7D32; }
+  .es-pending { background:var(--amber-bg); color:var(--amber-fg); }
+  .es-none    { background:#F5F5F5; color:#999; }
 
-  /* ── ADMIN ── */
+  /* ADMIN */
   .admin-gate { max-width:360px; margin:48px auto; background:var(--white); border:1.5px solid var(--border); border-radius:20px; padding:32px; text-align:center; box-shadow:0 4px 24px rgba(23,52,54,.08); }
   .gate-icon  { font-size:38px; margin-bottom:12px; display:block; }
   .gate-title { font-family:'Nunito',sans-serif; font-weight:900; font-size:19px; color:var(--dark-teal); margin-bottom:6px; }
   .gate-sub   { font-size:13px; color:var(--muted); margin-bottom:20px; }
   .gate-input { width:100%; padding:10px 14px; border:1.5px solid var(--border); border-radius:10px; font-size:14px; margin-bottom:10px; text-align:center; letter-spacing:.1em; color:var(--dark-teal); }
   .gate-input:focus { outline:none; border-color:var(--green); }
-  .gate-err   { font-size:12px; color:var(--danger); margin-top:8px; display:none; font-weight:600; }
-  .gate-hint  { font-size:11px; color:var(--muted); margin-top:14px; }
+  .gate-err  { font-size:12px; color:var(--danger); margin-top:8px; display:none; font-weight:600; }
+  .gate-hint { font-size:11px; color:var(--muted); margin-top:14px; }
   .gate-hint code { background:var(--page-bg); padding:2px 6px; border-radius:4px; font-size:11px; color:var(--dark-teal); }
-
+  .admin-tabs { display:flex; gap:8px; margin-bottom:20px; }
+  .admin-tab { padding:8px 18px; border-radius:10px; font-size:13px; font-weight:700; font-family:'Nunito',sans-serif; cursor:pointer; border:1.5px solid var(--border); background:var(--white); color:var(--muted); transition:all .15s; }
+  .admin-tab.active { background:var(--green); color:#fff; border-color:var(--green); }
+  .admin-section { display:none; }
+  .admin-section.active { display:block; }
   .add-box { background:var(--white); border:1.5px solid var(--border); border-radius:16px; padding:20px; margin-bottom:24px; }
   .add-box-title { font-family:'Nunito',sans-serif; font-weight:800; font-size:15px; color:var(--dark-teal); margin-bottom:16px; }
   .form-3col { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:12px; }
   .form-2col { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
   @media(max-width:600px){ .form-3col,.form-2col{grid-template-columns:1fr;} }
-
   .inv-item { display:flex; align-items:center; gap:12px; padding:12px 14px; background:var(--white); border:1.5px solid var(--border); border-radius:12px; margin-bottom:8px; transition:border-color .15s; }
   .inv-item:hover { border-color:var(--green); }
-  .inv-emoji { font-size:20px; width:28px; text-align:center; flex-shrink:0; }
-  .inv-info  { flex:1; min-width:0; }
-  .inv-name  { font-weight:700; font-size:13px; color:var(--dark-teal); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .inv-meta  { font-size:11px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .inv-emoji{font-size:20px;width:28px;text-align:center;flex-shrink:0;}
+  .inv-info{flex:1;min-width:0;}
+  .inv-name{font-weight:700;font-size:13px;color:var(--dark-teal);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .inv-meta{font-size:11px;color:var(--muted);}
   .qty-controls { display:flex; align-items:center; gap:6px; flex-shrink:0; }
   .qty-btn { width:28px; height:28px; border-radius:7px; border:1.5px solid var(--border); background:var(--green-bg); font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-weight:900; color:var(--green-h); transition:border-color .12s,background .12s; }
   .qty-btn:hover { border-color:var(--green); background:var(--green-light); }
-  .qty-num  { font-size:14px; font-weight:800; color:var(--dark-teal); min-width:24px; text-align:center; }
-  .del-btn  { background:none; border:none; color:var(--muted); cursor:pointer; font-size:16px; padding:5px 7px; border-radius:7px; transition:color .12s,background .12s; }
+  .qty-num { font-size:14px; font-weight:800; color:var(--dark-teal); min-width:24px; text-align:center; }
+  .del-btn { background:none; border:none; color:var(--muted); cursor:pointer; font-size:16px; padding:5px 7px; border-radius:7px; transition:color .12s,background .12s; }
   .del-btn:hover { color:var(--danger); background:var(--danger-bg); }
+  .cat-section-header { background:var(--dark-teal); color:#fff; padding:8px 14px; border-radius:10px; font-size:12px; font-weight:800; font-family:'Nunito',sans-serif; margin:16px 0 8px; letter-spacing:.04em; text-transform:uppercase; }
 
-  /* ── SECTION HEADERS in admin ── */
-  .cat-section-header {
-    background:var(--dark-teal); color:#fff; padding:8px 14px;
-    border-radius:10px; font-size:12px; font-weight:800;
-    font-family:'Nunito',sans-serif; margin:16px 0 8px;
-    letter-spacing:.04em; text-transform:uppercase;
-  }
+  /* DONOR CARDS */
+  .donor-card { background:var(--white); border:1.5px solid var(--border); border-radius:14px; padding:16px 18px; margin-bottom:10px; display:flex; align-items:center; gap:14px; transition:border-color .15s; }
+  .donor-card:hover { border-color:var(--green); }
+  .donor-avatar { width:40px; height:40px; border-radius:12px; background:var(--blue-bg); display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
+  .donor-info { flex:1; min-width:0; }
+  .donor-name { font-weight:800; font-size:14px; color:var(--dark-teal); font-family:'Nunito',sans-serif; }
+  .donor-meta { font-size:11px; color:var(--muted); margin-top:2px; }
+  .donor-stats { text-align:right; flex-shrink:0; }
+  .donor-value { font-family:'Nunito',sans-serif; font-weight:900; font-size:16px; color:var(--green); }
+  .donor-items-count { font-size:11px; color:var(--muted); }
 
-  @media(max-width:600px){
-    .view{padding:16px;} .stat-grid{grid-template-columns:repeat(2,1fr);}
-    .tab{padding:10px 12px;font-size:12px;} .header-title{font-size:15px;}
-  }
+  /* EMAILJS SETUP NOTICE */
+  .notice-box { background:var(--yellow-bg); border:1.5px solid var(--yellow); border-radius:12px; padding:14px 16px; margin-bottom:20px; font-size:13px; color:var(--dark-teal); }
+  .notice-box strong { font-weight:700; }
+  .notice-box a { color:var(--green); font-weight:600; }
+
+  @media(max-width:600px){ .view{padding:16px;} .tab{padding:10px 10px;font-size:11px;} .header-title{font-size:14px;} }
 </style>
 </head>
 <body>
@@ -305,7 +235,7 @@
 <!-- HEADER -->
 <header class="header">
   <div class="header-brand">
-    <div class="header-logo"><img src="https://images.squarespace-cdn.com/content/v1/62d9ac270f593e4cd6bdb23c/6ae0c393-5416-4d99-8707-2a8068c58fc6/SU4KLogo_NEWLAYOUT_WHITE-02.png?format=300w" alt="Speak Up for Kids Logo"></div>
+    <div class="header-logo"><img src="https://images.squarespace-cdn.com/content/v1/62d9ac270f593e4cd6bdb23c/6ae0c393-5416-4d99-8707-2a8068c58fc6/SU4KLogo_NEWLAYOUT_WHITE-02.png?format=300w" alt="Logo"></div>
     <div>
       <div class="header-title">Speak Up for Kids</div>
       <div class="header-sub">Donations Portal · Internal use only</div>
@@ -313,9 +243,7 @@
   </div>
   <div class="header-right">
     <div class="sync-label"><span class="sync-dot" id="sync-dot"></span><span id="sync-text">Connecting…</span></div>
-    <button class="cart-pill" id="cart-pill-btn" onclick="switchTab('checkout')">
-      🛒 <span id="pill-label">0 items</span>
-    </button>
+    <button class="cart-pill" id="cart-pill-btn" onclick="switchTab('checkout')">🛒 <span id="pill-label">0 items</span></button>
   </div>
 </header>
 
@@ -324,6 +252,7 @@
   <div class="tab active" id="tab-browse"   onclick="switchTab('browse')">Browse</div>
   <div class="tab"        id="tab-checkout" onclick="switchTab('checkout')">My Cart (<span id="cart-count">0</span>)</div>
   <div class="tab"        id="tab-log"      onclick="switchTab('log')">Monthly Log</div>
+  <div class="tab"        id="tab-donors"   onclick="switchTab('donors')">Donors</div>
   <div class="tab"        id="tab-admin"    onclick="switchTab('admin')">🔒 Admin</div>
 </nav>
 
@@ -331,7 +260,6 @@
 <div class="view active" id="view-browse">
   <div class="page-title">Donations catalog</div>
   <div class="page-sub">Browse available items and add them to your cart.</div>
-
   <div class="search-bar">
     <input type="text" id="search-input" placeholder="🔍  Search by name…" oninput="renderCatalog()">
     <select id="filter-age" onchange="renderCatalog()">
@@ -340,11 +268,11 @@
       <option>Tweens (9–12)</option><option>Teens (13+)</option>
       <option>Adult</option><option>All Ages</option>
     </select>
+    <select id="filter-donor" onchange="renderCatalog()">
+      <option value="">All donors</option>
+    </select>
   </div>
-
-  <!-- Category filter pills -->
   <div class="cat-pills" id="cat-pills"></div>
-
   <div class="item-grid" id="catalog-grid">
     <div class="empty-state" style="grid-column:1/-1;"><span class="empty-icon">⏳</span>Loading inventory…</div>
   </div>
@@ -353,13 +281,15 @@
 <!-- CHECKOUT -->
 <div class="view" id="view-checkout">
   <div class="page-title">My Cart</div>
-  <div class="page-sub">Review your items, then fill in your details to confirm checkout.</div>
+  <div class="page-sub">Review your items and fill in checkout details.</div>
   <div class="checkout-layout">
     <div id="cart-list"></div>
     <div class="form-panel">
       <div class="fp-title">Checkout details</div>
-      <div id="checkout-success" class="success-banner">✅ Order submitted! Items have been marked as checked out.</div>
+      <div id="checkout-success" class="success-banner">✅ Order submitted! Inventory updated and donor notified.</div>
       <div id="checkout-fields">
+        <!-- RECIPIENT INFO -->
+        <div class="fp-section">👤 Recipient</div>
         <div class="field"><label>Mentor name</label><input type="text" id="mentor-name" placeholder="Your full name"></div>
         <div class="field"><label>Child / Recipient name</label><input type="text" id="child-name" placeholder="e.g. Maria"></div>
         <div class="field"><label>Age group</label>
@@ -371,9 +301,27 @@
           </select>
         </div>
         <div class="field"><label>Planned visit / pick-up date</label><input type="date" id="visit-date"></div>
+
+        <!-- DISTRIBUTION -->
+        <div class="fp-section">🏢 Distribution</div>
+        <div class="field"><label>Distributed by / through</label>
+          <select id="dist-org">
+            <option value="">Select organization…</option>
+            <option>Speak Up for Kids (direct)</option>
+            <option>Guardian Ad Litem</option>
+            <option>Department of Children & Families (DCF)</option>
+            <option>Camelot Community Care</option>
+            <option>ChildNet</option>
+            <option>Foster Care Agency</option>
+            <option>School / Educational Institution</option>
+            <option>Other Nonprofit</option>
+            <option>Government Agency</option>
+          </select>
+        </div>
+
         <div class="field"><label>Notes (optional)</label><textarea id="checkout-notes" placeholder="e.g. Birthday gift, emergency bag…"></textarea></div>
         <button class="primary-btn" onclick="submitCheckout()">Confirm checkout</button>
-        <div class="saving-spinner" id="checkout-spinner">⏳ Saving to database…</div>
+        <div class="saving-spinner" id="checkout-spinner">⏳ Saving &amp; notifying donor…</div>
       </div>
     </div>
   </div>
@@ -387,17 +335,21 @@
     <div class="stat-card"><div class="stat-n">—</div><div class="stat-l">Checkouts</div></div>
     <div class="stat-card"><div class="stat-n">—</div><div class="stat-l">Items distributed</div></div>
     <div class="stat-card"><div class="stat-n">—</div><div class="stat-l">Mentors active</div></div>
+    <div class="stat-card"><div class="stat-n">—</div><div class="stat-l">Est. total value</div></div>
   </div>
   <div class="filter-row">
-    <label>Filter by month:</label>
+    <label>Month:</label>
     <select id="month-select" onchange="renderLog()"><option value="">All time</option></select>
+    <label>Org:</label>
+    <select id="log-org-filter" onchange="renderLog()"><option value="">All orgs</option></select>
     <button class="export-btn" onclick="exportCSV()">⬇ Export CSV</button>
   </div>
   <div class="log-table-wrap">
     <table class="log-table">
       <thead><tr>
-        <th>Date</th><th>Mentor</th><th>Recipient</th><th>Age Group</th>
-        <th>Items Checked Out</th><th>Visit Date</th><th>Notes</th>
+        <th>Date</th><th>Mentor</th><th>Recipient</th><th>Age</th>
+        <th>Items</th><th>Est. Value</th><th>Donor</th>
+        <th>Distributed By</th><th>Visit Date</th><th>Email</th><th>Notes</th>
       </tr></thead>
       <tbody id="log-body"></tbody>
     </table>
@@ -405,52 +357,143 @@
   <div id="log-empty" class="empty-state" style="display:none;"><span class="empty-icon">📋</span>No checkouts recorded yet.</div>
 </div>
 
+<!-- DONORS TAB -->
+<div class="view" id="view-donors">
+  <div class="page-title">Donor directory</div>
+  <div class="page-sub">Organizations and individuals who have donated items.</div>
+  <div class="stat-grid" id="donor-stats">
+    <div class="stat-card"><div class="stat-n">—</div><div class="stat-l">Total donors</div></div>
+    <div class="stat-card"><div class="stat-n">—</div><div class="stat-l">Total items donated</div></div>
+    <div class="stat-card"><div class="stat-n">—</div><div class="stat-l">Est. total value</div></div>
+    <div class="stat-card"><div class="stat-n">—</div><div class="stat-l">Notifications sent</div></div>
+  </div>
+  <div id="donor-list"><div class="empty-state"><span class="empty-icon">🤝</span>No donors added yet. Add donors in the Admin panel.</div></div>
+</div>
+
 <!-- ADMIN -->
 <div class="view" id="view-admin">
   <div class="admin-gate" id="admin-gate">
     <span class="gate-icon">🔒</span>
     <div class="gate-title">Admin access</div>
-    <div class="gate-sub">Enter your password to manage inventory.</div>
+    <div class="gate-sub">Enter your password to manage inventory and donors.</div>
     <input type="password" id="admin-pw" class="gate-input" placeholder="••••••••" onkeydown="if(event.key==='Enter') checkAdmin()">
     <button class="primary-btn" onclick="checkAdmin()">Enter admin panel</button>
     <div class="gate-err" id="admin-err">Incorrect password. Try again.</div>
     <div class="gate-hint">Default password: <code>sufk2024</code></div>
   </div>
   <div id="admin-panel" style="display:none;">
-    <div class="page-title">Manage inventory</div>
-    <div class="page-sub">Add new items or adjust quantities. All changes save instantly to the live database.</div>
-    <div class="add-box">
-      <div class="add-box-title">Add new item</div>
-      <div class="form-3col">
-        <div class="field" style="margin:0;"><label>Item name</label><input type="text" id="new-name" placeholder="e.g. Canned beans"></div>
-        <div class="field" style="margin:0;"><label>Quantity</label><input type="number" id="new-qty" min="1" value="1"></div>
-        <div class="field" style="margin:0;"><label>Emoji icon</label><input type="text" id="new-emoji" placeholder="🥫" maxlength="4"></div>
-      </div>
-      <div class="form-3col">
-        <div class="field" style="margin:0;"><label>Main category</label>
-          <select id="new-maincat" onchange="updateSubcats()">
-            <option value="">Select…</option>
-            <option>Food</option><option>Clothing</option><option>Electronics</option>
-            <option>Housing</option><option>Child &amp; Youth</option>
-            <option>Travel</option><option>Special Events</option>
-          </select>
-        </div>
-        <div class="field" style="margin:0;"><label>Subcategory</label>
-          <select id="new-subcat"><option value="">Select main category first</option></select>
-        </div>
-        <div class="field" style="margin:0;"><label>Age group</label>
-          <select id="new-age">
-            <option>All Ages</option><option>Toddler (0–4)</option><option>Kids (5–8)</option>
-            <option>Tweens (9–12)</option><option>Teens (13+)</option><option>Adult</option>
-          </select>
-        </div>
-      </div>
-      <button class="primary-btn" style="max-width:200px;" onclick="addItem()">+ Add to inventory</button>
-      <div class="saving-spinner" id="add-spinner">⏳ Saving…</div>
+    <div class="page-title">Admin panel</div>
+    <div class="page-sub">Manage inventory, donors, and distribution organizations.</div>
+
+    <!-- EMAIL SETUP NOTICE -->
+    <div class="notice-box" id="emailjs-notice">
+      ⚠️ <strong>Email notifications:</strong> To activate automatic donor emails, you need a free EmailJS account.
+      <a href="https://www.emailjs.com" target="_blank">Sign up at emailjs.com</a>, create a Gmail service, and enter your keys below.
     </div>
-    <div class="page-title" style="font-size:18px;margin-bottom:4px;">Current inventory</div>
-    <div class="page-sub">Items grouped by category.</div>
-    <div id="admin-inventory"><div class="empty-state"><span class="empty-icon">⏳</span>Loading…</div></div>
+
+    <!-- EMAILJS CONFIG -->
+    <div class="add-box">
+      <div class="add-box-title">📧 Email notification settings (EmailJS)</div>
+      <div class="form-3col">
+        <div class="field" style="margin:0;"><label>EmailJS Public Key</label><input type="text" id="ejs-pubkey" placeholder="your_public_key"></div>
+        <div class="field" style="margin:0;"><label>Service ID</label><input type="text" id="ejs-service" placeholder="service_xxxxxxx"></div>
+        <div class="field" style="margin:0;"><label>Template ID</label><input type="text" id="ejs-template" placeholder="template_xxxxxxx"></div>
+      </div>
+      <button class="primary-btn" style="max-width:220px;" onclick="saveEmailConfig()">Save email settings</button>
+      <div id="email-config-status" style="font-size:12px;color:var(--green);margin-top:8px;display:none;">✅ Email settings saved!</div>
+    </div>
+
+    <!-- ADMIN TABS -->
+    <div class="admin-tabs">
+      <div class="admin-tab active" id="atab-inventory" onclick="switchAdminTab('inventory')">📦 Inventory</div>
+      <div class="admin-tab" id="atab-donors" onclick="switchAdminTab('donors')">🤝 Donors</div>
+      <div class="admin-tab" id="atab-orgs" onclick="switchAdminTab('orgs')">🏢 Distribution Orgs</div>
+    </div>
+
+    <!-- INVENTORY SECTION -->
+    <div class="admin-section active" id="asec-inventory">
+      <div class="add-box">
+        <div class="add-box-title">Add new item</div>
+        <div class="form-3col">
+          <div class="field" style="margin:0;"><label>Item name</label><input type="text" id="new-name" placeholder="e.g. Canned beans"></div>
+          <div class="field" style="margin:0;"><label>Quantity</label><input type="number" id="new-qty" min="1" value="1"></div>
+          <div class="field" style="margin:0;"><label>Est. value per item ($)</label><input type="number" id="new-value" min="0" step="0.01" placeholder="0.00"></div>
+        </div>
+        <div class="form-3col">
+          <div class="field" style="margin:0;"><label>Main category</label>
+            <select id="new-maincat" onchange="updateSubcats()">
+              <option value="">Select…</option>
+              <option>Food</option><option>Clothing</option><option>Electronics</option>
+              <option>Housing</option><option>Child & Youth</option>
+              <option>Travel</option><option>Special Events</option>
+            </select>
+          </div>
+          <div class="field" style="margin:0;"><label>Subcategory</label>
+            <select id="new-subcat"><option value="">Select main category first</option></select>
+          </div>
+          <div class="field" style="margin:0;"><label>Age group</label>
+            <select id="new-age">
+              <option>All Ages</option><option>Toddler (0–4)</option><option>Kids (5–8)</option>
+              <option>Tweens (9–12)</option><option>Teens (13+)</option><option>Adult</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-2col">
+          <div class="field" style="margin:0;"><label>Donor (who gave this item)</label>
+            <select id="new-donor"><option value="">No donor / unknown</option></select>
+          </div>
+          <div class="field" style="margin:0;"><label>Emoji icon</label>
+            <input type="text" id="new-emoji" placeholder="🥫" maxlength="4">
+          </div>
+        </div>
+        <button class="primary-btn" style="max-width:200px;" onclick="addItem()">+ Add to inventory</button>
+        <div class="saving-spinner" id="add-spinner">⏳ Saving…</div>
+      </div>
+      <div class="page-title" style="font-size:18px;margin-bottom:12px;">Current inventory</div>
+      <div id="admin-inventory"><div class="empty-state"><span class="empty-icon">⏳</span>Loading…</div></div>
+    </div>
+
+    <!-- DONORS SECTION -->
+    <div class="admin-section" id="asec-donors">
+      <div class="add-box">
+        <div class="add-box-title">Add new donor</div>
+        <div class="form-3col">
+          <div class="field" style="margin:0;"><label>Donor / Organization name</label><input type="text" id="d-name" placeholder="e.g. Amazon Community Fund"></div>
+          <div class="field" style="margin:0;"><label>Contact email (for notifications)</label><input type="email" id="d-email" placeholder="contact@company.com"></div>
+          <div class="field" style="margin:0;"><label>Contact person name</label><input type="text" id="d-contact" placeholder="e.g. Jane Smith"></div>
+        </div>
+        <div class="form-3col">
+          <div class="field" style="margin:0;"><label>Total items donated</label><input type="number" id="d-items" min="0" value="0"></div>
+          <div class="field" style="margin:0;"><label>Est. total value ($)</label><input type="number" id="d-value" min="0" step="0.01" placeholder="0.00"></div>
+          <div class="field" style="margin:0;"><label>Emoji / icon</label><input type="text" id="d-emoji" placeholder="🏢" maxlength="4"></div>
+        </div>
+        <div class="field"><label>Notes</label><input type="text" id="d-notes" placeholder="e.g. Annual partner, holiday drive…"></div>
+        <button class="primary-btn" style="max-width:200px;" onclick="addDonor()">+ Add donor</button>
+        <div class="saving-spinner" id="donor-spinner">⏳ Saving…</div>
+      </div>
+      <div class="page-title" style="font-size:18px;margin-bottom:12px;">All donors</div>
+      <div id="admin-donor-list"><div class="empty-state"><span class="empty-icon">⏳</span>Loading…</div></div>
+    </div>
+
+    <!-- ORGS SECTION -->
+    <div class="admin-section" id="asec-orgs">
+      <div class="add-box">
+        <div class="add-box-title">Add distribution organization</div>
+        <div class="form-2col">
+          <div class="field" style="margin:0;"><label>Organization name</label><input type="text" id="org-name" placeholder="e.g. Guardian Ad Litem"></div>
+          <div class="field" style="margin:0;"><label>Type</label>
+            <select id="org-type">
+              <option>Nonprofit</option><option>Government Agency</option>
+              <option>School / Education</option><option>Foster Care</option><option>Other</option>
+            </select>
+          </div>
+        </div>
+        <button class="primary-btn" style="max-width:200px;" onclick="addOrg()">+ Add organization</button>
+        <div class="saving-spinner" id="org-spinner">⏳ Saving…</div>
+      </div>
+      <div class="page-title" style="font-size:18px;margin-bottom:12px;">Distribution organizations</div>
+      <div id="admin-org-list"><div class="empty-state"><span class="empty-icon">⏳</span>Loading…</div></div>
+    </div>
   </div>
 </div>
 
@@ -470,80 +513,37 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db  = getFirestore(app);
-const invCol = collection(db, "inventory");
-const logCol = collection(db, "checkoutLog");
+const invCol    = collection(db, "inventory");
+const logCol    = collection(db, "checkoutLog");
+const donorCol  = collection(db, "donors");
+const orgCol    = collection(db, "distOrgs");
 
 let inventory   = [];
 let checkoutLog = [];
+let donors      = [];
+let distOrgs    = [];
 let cart        = [];
 let activeCat   = "All";
 const ADMIN_PW  = "sufk2024";
 
-/* ── CATEGORY STRUCTURE ── */
 const CATEGORIES = {
-  "Food": {
-    icon: "🍎",
-    color: "ec-food-meals",
-    subs: ["Meals & Pantry","Snacks","Beverages","Treats"]
-  },
-  "Clothing": {
-    icon: "👕",
-    color: "ec-cloth-general",
-    subs: ["General Clothing","Outerwear","Shoes","Special Event","Undergarments & Accessories"]
-  },
-  "Electronics": {
-    icon: "💻",
-    color: "ec-elec-devices",
-    subs: ["Devices","Accessories","Other Electronics"]
-  },
-  "Housing": {
-    icon: "🏠",
-    color: "ec-house-furn",
-    subs: ["Furniture","Bedding & Linens","Household Supplies","Home Setup & Storage"]
-  },
-  "Child & Youth": {
-    icon: "🎒",
-    color: "ec-child-school",
-    subs: ["School & Learning","Basic Essentials","Recreation & Play"]
-  },
-  "Travel": {
-    icon: "🧳",
-    color: "ec-travel-luggage",
-    subs: ["Luggage & Travel Bags","Backpacks"]
-  },
-  "Special Events": {
-    icon: "🎉",
-    color: "ec-event-celeb",
-    subs: ["Celebration Supplies","Gift Cards"]
-  }
+  "Food":          { icon:"🍎", subs:["Meals & Pantry","Snacks","Beverages","Treats"] },
+  "Clothing":      { icon:"👕", subs:["General Clothing","Outerwear","Shoes","Special Event","Undergarments & Accessories"] },
+  "Electronics":   { icon:"💻", subs:["Devices","Accessories","Other Electronics"] },
+  "Housing":       { icon:"🏠", subs:["Furniture","Bedding & Linens","Household Supplies","Home Setup & Storage"] },
+  "Child & Youth": { icon:"🎒", subs:["School & Learning","Basic Essentials","Recreation & Play"] },
+  "Travel":        { icon:"🧳", subs:["Luggage & Travel Bags","Backpacks"] },
+  "Special Events":{ icon:"🎉", subs:["Celebration Supplies","Gift Cards"] }
 };
-
 const SUBCAT_COLORS = {
-  "Meals & Pantry":             "ec-food-meals",
-  "Snacks":                     "ec-food-snacks",
-  "Beverages":                  "ec-food-beverages",
-  "Treats":                     "ec-food-treats",
-  "General Clothing":           "ec-cloth-general",
-  "Outerwear":                  "ec-cloth-outer",
-  "Shoes":                      "ec-cloth-shoes",
-  "Special Event":              "ec-cloth-event",
-  "Undergarments & Accessories":"ec-cloth-under",
-  "Devices":                    "ec-elec-devices",
-  "Accessories":                "ec-elec-acc",
-  "Other Electronics":          "ec-elec-other",
-  "Furniture":                  "ec-house-furn",
-  "Bedding & Linens":           "ec-house-bed",
-  "Household Supplies":         "ec-house-supply",
-  "Home Setup & Storage":       "ec-house-setup",
-  "School & Learning":          "ec-child-school",
-  "Basic Essentials":           "ec-child-basic",
-  "Recreation & Play":          "ec-child-play",
-  "Luggage & Travel Bags":      "ec-travel-luggage",
-  "Backpacks":                  "ec-travel-back",
-  "Celebration Supplies":       "ec-event-celeb",
-  "Gift Cards":                 "ec-event-gift",
+  "Meals & Pantry":"ec-food-meals","Snacks":"ec-food-snacks","Beverages":"ec-food-beverages","Treats":"ec-food-treats",
+  "General Clothing":"ec-cloth-general","Outerwear":"ec-cloth-outer","Shoes":"ec-cloth-shoes","Special Event":"ec-cloth-event","Undergarments & Accessories":"ec-cloth-under",
+  "Devices":"ec-elec-devices","Accessories":"ec-elec-acc","Other Electronics":"ec-elec-other",
+  "Furniture":"ec-house-furn","Bedding & Linens":"ec-house-bed","Household Supplies":"ec-house-supply","Home Setup & Storage":"ec-house-setup",
+  "School & Learning":"ec-child-school","Basic Essentials":"ec-child-basic","Recreation & Play":"ec-child-play",
+  "Luggage & Travel Bags":"ec-travel-luggage","Backpacks":"ec-travel-back",
+  "Celebration Supplies":"ec-event-celeb","Gift Cards":"ec-event-gift"
 };
-
 const SUBCAT_ICONS = {
   "Meals & Pantry":"🥫","Snacks":"🍿","Beverages":"🧃","Treats":"🍬",
   "General Clothing":"👕","Outerwear":"🧥","Shoes":"👟","Special Event":"👗","Undergarments & Accessories":"🧦",
@@ -554,30 +554,60 @@ const SUBCAT_ICONS = {
   "Celebration Supplies":"🎉","Gift Cards":"🎁"
 };
 
+/* ── EMAIL CONFIG ── */
+let emailConfig = JSON.parse(localStorage.getItem('sufk_email_config') || '{}');
+if (emailConfig.pubkey) {
+  emailjs.init(emailConfig.pubkey);
+}
+window.saveEmailConfig = () => {
+  emailConfig = {
+    pubkey:   document.getElementById('ejs-pubkey').value.trim(),
+    service:  document.getElementById('ejs-service').value.trim(),
+    template: document.getElementById('ejs-template').value.trim()
+  };
+  localStorage.setItem('sufk_email_config', JSON.stringify(emailConfig));
+  if (emailConfig.pubkey) emailjs.init(emailConfig.pubkey);
+  document.getElementById('email-config-status').style.display = 'block';
+  setTimeout(() => document.getElementById('email-config-status').style.display = 'none', 3000);
+};
+// Pre-fill saved config
+if (emailConfig.pubkey) document.getElementById('ejs-pubkey').value = emailConfig.pubkey;
+if (emailConfig.service) document.getElementById('ejs-service').value = emailConfig.service;
+if (emailConfig.template) document.getElementById('ejs-template').value = emailConfig.template;
+
 /* ── SYNC ── */
 function setSyncStatus(s) {
-  const dot = document.getElementById("sync-dot");
-  const txt = document.getElementById("sync-text");
-  dot.className = "sync-dot " + s;
-  txt.textContent = s === "live" ? "Live" : s === "syncing" ? "Syncing…" : "Connecting…";
+  document.getElementById("sync-dot").className = "sync-dot " + s;
+  document.getElementById("sync-text").textContent = s==="live"?"Live":s==="syncing"?"Syncing…":"Connecting…";
 }
 
 /* ── LIVE LISTENERS ── */
 onSnapshot(query(invCol, orderBy("name")), snap => {
-  inventory = snap.docs.map(d => ({ firestoreId: d.id, ...d.data() }));
-  renderCatPills();
-  renderCatalog();
-  if (document.getElementById("admin-panel").style.display === "block") renderAdminInventory();
+  inventory = snap.docs.map(d => ({ firestoreId:d.id, ...d.data() }));
+  renderCatalog(); renderDonorFilter();
+  if (document.getElementById("admin-panel").style.display==="block") renderAdminInventory();
   setSyncStatus("live");
-  const overlay = document.getElementById("loading-overlay");
-  overlay.classList.add("fade-out");
-  setTimeout(() => overlay.remove(), 500);
-}, err => { console.error(err); setSyncStatus(""); });
+  const ov = document.getElementById("loading-overlay");
+  ov.classList.add("fade-out"); setTimeout(() => ov.remove(), 500);
+}, () => setSyncStatus(""));
 
 onSnapshot(query(logCol, orderBy("createdAt","desc")), snap => {
-  checkoutLog = snap.docs.map(d => ({ firestoreId: d.id, ...d.data() }));
-  populateMonthFilter(); renderLog();
-}, err => console.error(err));
+  checkoutLog = snap.docs.map(d => ({ firestoreId:d.id, ...d.data() }));
+  populateMonthFilter(); renderLog(); renderDonorTab();
+});
+
+onSnapshot(query(donorCol, orderBy("name")), snap => {
+  donors = snap.docs.map(d => ({ firestoreId:d.id, ...d.data() }));
+  renderDonorFilter(); renderDonorTab();
+  if (document.getElementById("admin-panel").style.display==="block") renderAdminDonors();
+  populateDonorDropdown();
+});
+
+onSnapshot(query(orgCol, orderBy("name")), snap => {
+  distOrgs = snap.docs.map(d => ({ firestoreId:d.id, ...d.data() }));
+  if (document.getElementById("admin-panel").style.display==="block") renderAdminOrgs();
+  populateDistOrgDropdown();
+});
 
 /* ── TABS ── */
 window.switchTab = t => {
@@ -587,95 +617,121 @@ window.switchTab = t => {
   document.getElementById("view-"+t).classList.add("active");
   if (t==="log")    renderLog();
   if (t==="browse") renderCatalog();
+  if (t==="donors") renderDonorTab();
   if (t==="admin" && document.getElementById("admin-panel").style.display==="block") renderAdminInventory();
 };
+window.switchAdminTab = t => {
+  document.querySelectorAll(".admin-tab").forEach(el => el.classList.remove("active"));
+  document.querySelectorAll(".admin-section").forEach(el => el.classList.remove("active"));
+  document.getElementById("atab-"+t).classList.add("active");
+  document.getElementById("asec-"+t).classList.add("active");
+};
 
-/* ── CATEGORY PILLS ── */
-function renderCatPills() {
-  const mainCats = ["All", ...Object.keys(CATEGORIES)];
-  document.getElementById("cat-pills").innerHTML = mainCats.map(c => `
-    <div class="cat-pill${activeCat===c?" active":""}" onclick="setActiveCat('${c}')">${c==="All"?"🗂 All":CATEGORIES[c]?.icon+" "+c}</div>
-  `).join("");
+/* ── DONOR FILTER DROPDOWN ── */
+function renderDonorFilter() {
+  const sel = document.getElementById("filter-donor");
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">All donors</option>' + donors.map(d => `<option${d.name===cur?" selected":""}>${d.name}</option>`).join("");
 }
-window.setActiveCat = c => { activeCat = c; renderCatPills(); renderCatalog(); };
+
+function populateDonorDropdown() {
+  const sel = document.getElementById("new-donor");
+  sel.innerHTML = '<option value="">No donor / unknown</option>' + donors.map(d => `<option value="${d.firestoreId}">${d.name}</option>`).join("");
+}
+
+function populateDistOrgDropdown() {
+  const sel = document.getElementById("dist-org");
+  const defaults = ["Speak Up for Kids (direct)","Guardian Ad Litem","Department of Children & Families (DCF)","Camelot Community Care","ChildNet","Foster Care Agency","School / Educational Institution","Other Nonprofit","Government Agency"];
+  const custom = distOrgs.map(o => o.name).filter(n => !defaults.includes(n));
+  sel.innerHTML = '<option value="">Select organization…</option>' +
+    [...defaults, ...custom].map(o => `<option>${o}</option>`).join("");
+}
 
 /* ── CATALOG ── */
 function ageBadge(age) {
-  if (!age) return "b-all";
+  if (!age||age==="All Ages") return "b-all";
   if (age.includes("Toddler")) return "b-toddler";
   if (age.includes("5–8"))     return "b-kids";
   if (age.includes("9–12"))    return "b-tweens";
   if (age.includes("13+"))     return "b-teens";
-  if (age.includes("Adult"))   return "b-adult";
-  return "b-all";
+  return "b-adult";
 }
+function renderCatPills() {
+  const mainCats = ["All", ...Object.keys(CATEGORIES)];
+  document.getElementById("cat-pills").innerHTML = mainCats.map(c =>
+    `<div class="cat-pill${activeCat===c?" active":""}" onclick="setActiveCat('${c}')">${c==="All"?"🗂 All":CATEGORIES[c]?.icon+" "+c}</div>`
+  ).join("");
+}
+window.setActiveCat = c => { activeCat=c; renderCatPills(); renderCatalog(); };
 
 function renderCatalog() {
   const q  = document.getElementById("search-input").value.toLowerCase();
   const ag = document.getElementById("filter-age").value;
+  const dn = document.getElementById("filter-donor").value;
   const grid = document.getElementById("catalog-grid");
   const items = inventory.filter(i =>
-    (activeCat === "All" || i.maincat === activeCat) &&
+    (activeCat==="All" || i.maincat===activeCat) &&
     (!q  || i.name.toLowerCase().includes(q) || (i.subcat||"").toLowerCase().includes(q)) &&
-    (!ag || i.age === ag)
+    (!ag || i.age===ag) &&
+    (!dn || i.donorName===dn)
   );
-  if (!items.length) {
-    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><span class="empty-icon">🔍</span>No items match your search.</div>`;
-    return;
-  }
+  if (!items.length) { grid.innerHTML=`<div class="empty-state" style="grid-column:1/-1;"><span class="empty-icon">🔍</span>No items match your search.</div>`; return; }
   grid.innerHTML = items.map(item => {
-    const inCart    = cart.filter(c => c.firestoreId === item.firestoreId).length;
+    const inCart    = cart.filter(c => c.firestoreId===item.firestoreId).length;
     const remaining = item.qty - inCart;
     const avail     = remaining > 0;
     const icon      = item.icon || SUBCAT_ICONS[item.subcat] || CATEGORIES[item.maincat]?.icon || "📦";
     const bgClass   = SUBCAT_COLORS[item.subcat] || "ec-other";
+    const valStr    = item.value ? `$${parseFloat(item.value).toFixed(2)}` : "";
     return `<div class="item-card${!avail?" out-of-stock":""}">
       <div class="emoji-box ${bgClass}">${icon}</div>
       <div class="item-name">${item.name}</div>
       <div class="item-cat">${item.maincat} › ${item.subcat}</div>
-      <span class="badge ${ageBadge(item.age)}">${item.age || "All Ages"}</span>
+      ${item.donorName ? `<div class="donor-tag">🤝 ${item.donorName}</div>` : ""}
+      <span class="badge ${ageBadge(item.age)}">${item.age||"All Ages"}</span>
+      ${valStr ? `<div style="font-size:11px;color:var(--green-h);font-weight:700;margin-top:4px;">Est. ${valStr}</div>` : ""}
       <div class="stock-line ${avail?"stock-ok":"stock-no"}">${avail?`✓ ${remaining} available`:"Out of stock"}</div>
-      ${avail
-        ? `<button class="add-btn" onclick="addToCart('${item.firestoreId}')">Add to cart</button>`
-        : `<button class="add-btn" disabled>Out of stock</button>`}
+      ${avail ? `<button class="add-btn" onclick="addToCart('${item.firestoreId}')">Add to cart</button>`
+              : `<button class="add-btn" disabled>Out of stock</button>`}
     </div>`;
   }).join("");
 }
 
 /* ── CART ── */
 window.addToCart = fid => {
-  const item   = inventory.find(i => i.firestoreId === fid);
-  const inCart = cart.filter(c => c.firestoreId === fid).length;
+  const item   = inventory.find(i => i.firestoreId===fid);
+  const inCart = cart.filter(c => c.firestoreId===fid).length;
   if (inCart >= item.qty) return;
   const icon = item.icon || SUBCAT_ICONS[item.subcat] || "📦";
-  cart.push({ firestoreId:fid, name:item.name, icon, age:item.age, subcat:item.subcat, maincat:item.maincat });
+  cart.push({ firestoreId:fid, name:item.name, icon, age:item.age, subcat:item.subcat, maincat:item.maincat, donorId:item.donorId||null, donorName:item.donorName||null, value:item.value||0 });
   updateCart(); renderCatalog();
 };
 window.removeFromCart = idx => { cart.splice(idx,1); updateCart(); renderCatalog(); };
-
 function updateCart() {
   const n = cart.length;
   document.getElementById("cart-count").textContent = n;
   const pill = document.getElementById("cart-pill-btn");
   if (n>0) { pill.classList.add("show"); document.getElementById("pill-label").textContent=`${n} item${n>1?"s":""}`; }
-  else       pill.classList.remove("show");
+  else pill.classList.remove("show");
   renderCartList();
 }
 function renderCartList() {
   const el = document.getElementById("cart-list");
-  if (!cart.length) {
-    el.innerHTML=`<div class="empty-state"><span class="empty-icon">🛒</span>Your cart is empty.<br><span style="font-size:12px;color:var(--muted);">Browse the catalog to add items.</span></div>`;
-    return;
-  }
+  if (!cart.length) { el.innerHTML=`<div class="empty-state"><span class="empty-icon">🛒</span>Your cart is empty.<br><span style="font-size:12px;color:var(--muted);">Browse the catalog to add items.</span></div>`; return; }
+  const total = cart.reduce((s,c) => s + parseFloat(c.value||0), 0);
   el.innerHTML = cart.map((c,i) => `
     <div class="cart-item-row">
       <span class="ci-emoji">${c.icon}</span>
       <div class="ci-info">
         <div class="ci-name">${c.name}</div>
-        <div class="ci-sub">${c.maincat} › ${c.subcat} · ${c.age||"All Ages"}</div>
+        <div class="ci-sub">${c.maincat} › ${c.subcat}${c.donorName?" · 🤝 "+c.donorName:""}${c.value?" · $"+parseFloat(c.value).toFixed(2):""}</div>
       </div>
       <button class="rm-btn" onclick="removeFromCart(${i})" aria-label="Remove">✕</button>
-    </div>`).join("");
+    </div>`).join("") +
+    `<div style="padding:12px 0;border-top:2px solid var(--border);font-weight:700;font-size:13px;color:var(--dark-teal);display:flex;justify-content:space-between;">
+      <span>${cart.length} item${cart.length>1?"s":""}</span>
+      ${total>0?`<span style="color:var(--green);">Est. $${total.toFixed(2)}</span>`:""}
+    </div>`;
 }
 
 /* ── CHECKOUT ── */
@@ -684,7 +740,9 @@ window.submitCheckout = async () => {
   const child     = document.getElementById("child-name").value.trim();
   const childAge  = document.getElementById("child-age").value;
   const visitDate = document.getElementById("visit-date").value;
+  const distOrg   = document.getElementById("dist-org").value;
   if (!mentor||!child||!childAge||!visitDate) { alert("Please fill in all required fields."); return; }
+  if (!distOrg) { alert("Please select the distributing organization."); return; }
   if (!cart.length) { alert("Your cart is empty."); return; }
 
   setSyncStatus("syncing");
@@ -692,21 +750,63 @@ window.submitCheckout = async () => {
   document.querySelector("#checkout-fields .primary-btn").disabled = true;
 
   const now = new Date();
+  const totalValue = cart.reduce((s,c) => s + parseFloat(c.value||0), 0);
+
+  // Group items by donor for notifications
+  const donorGroups = {};
+  cart.forEach(c => {
+    if (c.donorId) {
+      if (!donorGroups[c.donorId]) donorGroups[c.donorId] = { donorName:c.donorName, items:[] };
+      donorGroups[c.donorId].items.push(c.name);
+    }
+  });
+
   const entry = {
     date:      now.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}),
     month:     now.toLocaleString("en-US",{month:"long",year:"numeric"}),
-    mentor, child, childAge, visitDate,
+    mentor, child, childAge, visitDate, distOrg,
     items:     cart.map(c => c.name),
     itemDetails: cart.map(c => `${c.name} (${c.maincat} › ${c.subcat})`),
+    totalValue: totalValue.toFixed(2),
+    donors:    [...new Set(cart.map(c => c.donorName).filter(Boolean))],
     notes:     document.getElementById("checkout-notes").value.trim(),
+    emailSent: false,
     createdAt: serverTimestamp()
   };
+
   try {
     await Promise.all(cart.map(async c => {
-      const item = inventory.find(i => i.firestoreId === c.firestoreId);
+      const item = inventory.find(i => i.firestoreId===c.firestoreId);
       if (item) await updateDoc(doc(db,"inventory",c.firestoreId), { qty: Math.max(0, item.qty-1) });
     }));
-    await addDoc(logCol, entry);
+    const logRef = await addDoc(logCol, entry);
+
+    // Send donor emails
+    let emailSent = false;
+    if (emailConfig.pubkey && emailConfig.service && emailConfig.template && Object.keys(donorGroups).length > 0) {
+      try {
+        for (const [donorId, group] of Object.entries(donorGroups)) {
+          const donor = donors.find(d => d.firestoreId===donorId);
+          if (donor && donor.email) {
+            await emailjs.send(emailConfig.service, emailConfig.template, {
+              to_email:    donor.email,
+              to_name:     donor.contactPerson || donor.name,
+              donor_name:  donor.name,
+              items_list:  group.items.join(", "),
+              child_name:  child,
+              child_age:   childAge,
+              visit_date:  visitDate,
+              dist_org:    distOrg,
+              mentor_name: mentor,
+              org_name:    "Speak Up for Kids"
+            });
+            emailSent = true;
+          }
+        }
+        if (emailSent) await updateDoc(doc(db,"checkoutLog",logRef.id), { emailSent: true });
+      } catch(emailErr) { console.warn("Email error:", emailErr); }
+    }
+
     cart=[]; updateCart();
     const fields = document.getElementById("checkout-fields");
     fields.style.opacity="0.4"; fields.style.pointerEvents="none";
@@ -719,11 +819,12 @@ window.submitCheckout = async () => {
       ["mentor-name","child-name","checkout-notes"].forEach(id => document.getElementById(id).value="");
       document.getElementById("child-age").value="";
       document.getElementById("visit-date").value="";
+      document.getElementById("dist-org").value="";
       renderCatalog();
-    }, 2600);
+    }, 3000);
     setSyncStatus("live");
   } catch(e) {
-    alert("Error saving checkout: "+e.message);
+    alert("Error: "+e.message);
     document.getElementById("checkout-spinner").classList.remove("show");
     document.querySelector("#checkout-fields .primary-btn").disabled=false;
     setSyncStatus("live");
@@ -736,81 +837,117 @@ function populateMonthFilter() {
   const months = [...new Set(checkoutLog.map(e=>e.month))];
   const cur = sel.value;
   sel.innerHTML = '<option value="">All time</option>' + months.map(m=>`<option${m===cur?" selected":""}>${m}</option>`).join("");
+  const orgSel = document.getElementById("log-org-filter");
+  const orgs = [...new Set(checkoutLog.map(e=>e.distOrg).filter(Boolean))];
+  const curOrg = orgSel.value;
+  orgSel.innerHTML = '<option value="">All orgs</option>' + orgs.map(o=>`<option${o===curOrg?" selected":""}>${o}</option>`).join("");
 }
 function renderLog() {
-  const mf       = document.getElementById("month-select").value;
-  const filtered = mf ? checkoutLog.filter(e=>e.month===mf) : checkoutLog;
+  const mf  = document.getElementById("month-select").value;
+  const org = document.getElementById("log-org-filter").value;
+  const filtered = checkoutLog.filter(e =>
+    (!mf  || e.month===mf) &&
+    (!org || e.distOrg===org)
+  );
   const totalItems = filtered.reduce((s,e)=>s+(e.items?e.items.length:0),0);
   const mentors    = new Set(filtered.map(e=>e.mentor)).size;
+  const totalVal   = filtered.reduce((s,e)=>s+parseFloat(e.totalValue||0),0);
   document.getElementById("log-stats").innerHTML=`
     <div class="stat-card"><div class="stat-n">${filtered.length}</div><div class="stat-l">Checkouts</div></div>
     <div class="stat-card"><div class="stat-n">${totalItems}</div><div class="stat-l">Items distributed</div></div>
     <div class="stat-card"><div class="stat-n">${mentors}</div><div class="stat-l">Mentors active</div></div>
+    <div class="stat-card"><div class="stat-n">$${totalVal.toFixed(0)}</div><div class="stat-l">Est. total value</div></div>
   `;
   const tbody=document.getElementById("log-body");
   const empty=document.getElementById("log-empty");
   if (!filtered.length) { tbody.innerHTML=""; empty.style.display="block"; return; }
   empty.style.display="none";
   tbody.innerHTML=filtered.map(e=>`<tr>
-    <td>${e.date}</td><td>${e.mentor}</td><td>${e.child}</td>
+    <td>${e.date}</td>
+    <td>${e.mentor}</td>
+    <td>${e.child}</td>
     <td>${e.childAge?e.childAge.split(" ")[0]:"—"}</td>
     <td title="${(e.itemDetails||e.items||[]).join(", ")}">${(e.items||[]).join(", ")}</td>
-    <td>${e.visitDate||"—"}</td><td>${e.notes||"—"}</td>
+    <td>${e.totalValue?`$${parseFloat(e.totalValue).toFixed(2)}`:"—"}</td>
+    <td>${(e.donors||[]).join(", ")||"—"}</td>
+    <td>${e.distOrg||"—"}</td>
+    <td>${e.visitDate||"—"}</td>
+    <td><span class="email-status ${e.emailSent?"es-sent":"es-none"}">${e.emailSent?"✉ Sent":"—"}</span></td>
+    <td>${e.notes||"—"}</td>
   </tr>`).join("");
 }
 window.exportCSV = () => {
-  const mf=document.getElementById("month-select").value;
-  const filtered=mf?checkoutLog.filter(e=>e.month===mf):checkoutLog;
+  const mf  = document.getElementById("month-select").value;
+  const org = document.getElementById("log-org-filter").value;
+  const filtered = checkoutLog.filter(e=>(!mf||e.month===mf)&&(!org||e.distOrg===org));
   if (!filtered.length) { alert("No data to export."); return; }
   const rows=[
-    ["Date","Mentor","Recipient","Age Group","Items","Item Details","Visit Date","Notes"],
-    ...filtered.map(e=>[e.date,e.mentor,e.child,e.childAge,(e.items||[]).join("; "),(e.itemDetails||[]).join("; "),e.visitDate||"",e.notes||""])
+    ["Date","Mentor","Recipient","Age Group","Items","Est. Value","Donors","Distributed By","Visit Date","Email Sent","Notes"],
+    ...filtered.map(e=>[e.date,e.mentor,e.child,e.childAge,(e.items||[]).join("; "),e.totalValue||"0",(e.donors||[]).join("; "),e.distOrg||"",e.visitDate||"",e.emailSent?"Yes":"No",e.notes||""])
   ];
-  const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(",")).join("
-");
+  const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(",")).join("\n");
   const a=document.createElement("a");
   a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(csv);
   a.download=`donations-log-${mf||"all"}.csv`;
   a.click();
 };
 
+/* ── DONOR TAB ── */
+function renderDonorTab() {
+  const el = document.getElementById("donor-list");
+  if (!donors.length) { el.innerHTML=`<div class="empty-state"><span class="empty-icon">🤝</span>No donors added yet. Add donors in the Admin panel.</div>`; return; }
+  const totalNotif = checkoutLog.filter(e=>e.emailSent).length;
+  const totalVal   = donors.reduce((s,d)=>s+parseFloat(d.totalValue||0),0);
+  const totalItems = donors.reduce((s,d)=>s+parseInt(d.totalItems||0),0);
+  document.getElementById("donor-stats").innerHTML=`
+    <div class="stat-card"><div class="stat-n">${donors.length}</div><div class="stat-l">Total donors</div></div>
+    <div class="stat-card"><div class="stat-n">${totalItems}</div><div class="stat-l">Total items donated</div></div>
+    <div class="stat-card"><div class="stat-n">$${totalVal.toFixed(0)}</div><div class="stat-l">Est. total value</div></div>
+    <div class="stat-card"><div class="stat-n">${totalNotif}</div><div class="stat-l">Notifications sent</div></div>
+  `;
+  el.innerHTML = donors.map(d => `
+    <div class="donor-card">
+      <div class="donor-avatar">${d.emoji||"🏢"}</div>
+      <div class="donor-info">
+        <div class="donor-name">${d.name}</div>
+        <div class="donor-meta">${d.contactPerson?d.contactPerson+" · ":""}${d.email||"No email on file"}${d.notes?" · "+d.notes:""}</div>
+      </div>
+      <div class="donor-stats">
+        ${d.totalValue?`<div class="donor-value">$${parseFloat(d.totalValue).toFixed(0)}</div>`:""}
+        ${d.totalItems?`<div class="donor-items-count">${d.totalItems} items</div>`:""}
+      </div>
+    </div>`).join("");
+}
+
 /* ── ADMIN ── */
 window.checkAdmin = () => {
   if (document.getElementById("admin-pw").value===ADMIN_PW) {
     document.getElementById("admin-gate").style.display="none";
     document.getElementById("admin-panel").style.display="block";
-    renderAdminInventory();
+    renderAdminInventory(); renderAdminDonors(); renderAdminOrgs();
   } else { document.getElementById("admin-err").style.display="block"; }
 };
 
-/* Subcategory updater */
 window.updateSubcats = () => {
   const main = document.getElementById("new-maincat").value;
   const sel  = document.getElementById("new-subcat");
-  if (!main || !CATEGORIES[main]) { sel.innerHTML='<option value="">Select main category first</option>'; return; }
+  if (!main||!CATEGORIES[main]) { sel.innerHTML='<option value="">Select main category first</option>'; return; }
   sel.innerHTML = CATEGORIES[main].subs.map(s=>`<option>${s}</option>`).join("");
 };
 
 function renderAdminInventory() {
   const el = document.getElementById("admin-inventory");
-  if (!inventory.length) { el.innerHTML=`<div class="empty-state"><span class="empty-icon">📦</span>No items yet. Add your first item above!</div>`; return; }
-  
-  // Group by main category
-  const grouped = {};
-  inventory.forEach(item => {
-    const key = item.maincat || "Other";
-    if (!grouped[key]) grouped[key] = [];
-    grouped[key].push(item);
-  });
-
-  el.innerHTML = Object.entries(grouped).map(([cat, items]) => `
-    <div class="cat-section-header">${CATEGORIES[cat]?.icon||"📦"} ${cat} (${items.length} items)</div>
-    ${items.map(item => `
+  if (!inventory.length) { el.innerHTML=`<div class="empty-state"><span class="empty-icon">📦</span>No items yet.</div>`; return; }
+  const grouped={};
+  inventory.forEach(item => { const k=item.maincat||"Other"; if(!grouped[k]) grouped[k]=[]; grouped[k].push(item); });
+  el.innerHTML=Object.entries(grouped).map(([cat,items])=>`
+    <div class="cat-section-header">${CATEGORIES[cat]?.icon||"📦"} ${cat} (${items.length})</div>
+    ${items.map(item=>`
       <div class="inv-item">
-        <span class="inv-emoji">${item.icon || SUBCAT_ICONS[item.subcat] || "📦"}</span>
+        <span class="inv-emoji">${item.icon||SUBCAT_ICONS[item.subcat]||"📦"}</span>
         <div class="inv-info">
           <div class="inv-name">${item.name}</div>
-          <div class="inv-meta">${item.subcat} · ${item.age||"All Ages"}</div>
+          <div class="inv-meta">${item.subcat} · ${item.age||"All Ages"}${item.donorName?" · 🤝 "+item.donorName:""}${item.value?" · $"+parseFloat(item.value).toFixed(2):""}</div>
         </div>
         <div class="qty-controls">
           <button class="qty-btn" onclick="adjustQty('${item.firestoreId}',${item.qty},-1)">−</button>
@@ -818,17 +955,16 @@ function renderAdminInventory() {
           <button class="qty-btn" onclick="adjustQty('${item.firestoreId}',${item.qty},1)">+</button>
           <button class="del-btn" onclick="removeItem('${item.firestoreId}')">🗑</button>
         </div>
-      </div>`).join("")}
-  `).join("");
+      </div>`).join("")}`).join("");
 }
 
-window.adjustQty = async (fid, current, delta) => {
+window.adjustQty = async (fid,current,delta) => {
   setSyncStatus("syncing");
   try { await updateDoc(doc(db,"inventory",fid),{qty:Math.max(0,current+delta)}); setSyncStatus("live"); }
   catch(e) { alert("Error: "+e.message); setSyncStatus("live"); }
 };
 window.removeItem = async fid => {
-  if (!confirm("Remove this item from inventory?")) return;
+  if (!confirm("Remove this item?")) return;
   setSyncStatus("syncing");
   try { await deleteDoc(doc(db,"inventory",fid)); setSyncStatus("live"); }
   catch(e) { alert("Error: "+e.message); setSyncStatus("live"); }
@@ -836,9 +972,13 @@ window.removeItem = async fid => {
 window.addItem = async () => {
   const name    = document.getElementById("new-name").value.trim();
   const qty     = parseInt(document.getElementById("new-qty").value)||1;
+  const value   = parseFloat(document.getElementById("new-value").value)||0;
   const maincat = document.getElementById("new-maincat").value;
   const subcat  = document.getElementById("new-subcat").value;
   const age     = document.getElementById("new-age").value;
+  const donorSel= document.getElementById("new-donor");
+  const donorId = donorSel.value||null;
+  const donorName= donorId ? donors.find(d=>d.firestoreId===donorId)?.name||null : null;
   const icon    = document.getElementById("new-emoji").value.trim() || SUBCAT_ICONS[subcat] || CATEGORIES[maincat]?.icon || "📦";
   if (!name)    { alert("Please enter an item name."); return; }
   if (!maincat) { alert("Please select a main category."); return; }
@@ -846,22 +986,91 @@ window.addItem = async () => {
   document.getElementById("add-spinner").classList.add("show");
   setSyncStatus("syncing");
   try {
-    await addDoc(invCol,{ name, qty, maincat, subcat, age, icon, createdAt:serverTimestamp() });
+    await addDoc(invCol,{ name, qty, value, maincat, subcat, age, icon, donorId, donorName, createdAt:serverTimestamp() });
     document.getElementById("new-name").value="";
     document.getElementById("new-qty").value="1";
+    document.getElementById("new-value").value="";
     document.getElementById("new-emoji").value="";
     document.getElementById("add-spinner").classList.remove("show");
     setSyncStatus("live");
-  } catch(e) {
-    alert("Error adding item: "+e.message);
-    document.getElementById("add-spinner").classList.remove("show");
-    setSyncStatus("live");
-  }
+  } catch(e) { alert("Error: "+e.message); document.getElementById("add-spinner").classList.remove("show"); setSyncStatus("live"); }
 };
 
-updateCart();
-renderLog();
-renderCatPills();
+/* ── DONORS ADMIN ── */
+function renderAdminDonors() {
+  const el = document.getElementById("admin-donor-list");
+  if (!donors.length) { el.innerHTML=`<div class="empty-state"><span class="empty-icon">🤝</span>No donors yet.</div>`; return; }
+  el.innerHTML = donors.map(d=>`
+    <div class="inv-item">
+      <span class="inv-emoji">${d.emoji||"🏢"}</span>
+      <div class="inv-info">
+        <div class="inv-name">${d.name}</div>
+        <div class="inv-meta">${d.email||"No email"} · ${d.contactPerson||""} · ${d.totalItems||0} items · $${parseFloat(d.totalValue||0).toFixed(2)}</div>
+      </div>
+      <button class="del-btn" onclick="removeDonor('${d.firestoreId}')">🗑</button>
+    </div>`).join("");
+}
+window.addDonor = async () => {
+  const name    = document.getElementById("d-name").value.trim();
+  const email   = document.getElementById("d-email").value.trim();
+  const contact = document.getElementById("d-contact").value.trim();
+  const items   = parseInt(document.getElementById("d-items").value)||0;
+  const value   = parseFloat(document.getElementById("d-value").value)||0;
+  const emoji   = document.getElementById("d-emoji").value.trim()||"🏢";
+  const notes   = document.getElementById("d-notes").value.trim();
+  if (!name) { alert("Please enter a donor name."); return; }
+  document.getElementById("donor-spinner").classList.add("show");
+  setSyncStatus("syncing");
+  try {
+    await addDoc(donorCol,{ name, email, contactPerson:contact, totalItems:items, totalValue:value, emoji, notes, createdAt:serverTimestamp() });
+    ["d-name","d-email","d-contact","d-items","d-value","d-emoji","d-notes"].forEach(id => { const el=document.getElementById(id); if(el) el.value=el.type==="number"?"0":""; });
+    document.getElementById("donor-spinner").classList.remove("show");
+    setSyncStatus("live");
+  } catch(e) { alert("Error: "+e.message); document.getElementById("donor-spinner").classList.remove("show"); setSyncStatus("live"); }
+};
+window.removeDonor = async fid => {
+  if (!confirm("Remove this donor?")) return;
+  setSyncStatus("syncing");
+  try { await deleteDoc(doc(db,"donors",fid)); setSyncStatus("live"); }
+  catch(e) { alert("Error: "+e.message); setSyncStatus("live"); }
+};
+
+/* ── ORGS ADMIN ── */
+function renderAdminOrgs() {
+  const el = document.getElementById("admin-org-list");
+  if (!distOrgs.length) { el.innerHTML=`<div class="empty-state"><span class="empty-icon">🏢</span>No custom organizations yet. Default ones are always available.</div>`; return; }
+  el.innerHTML = distOrgs.map(o=>`
+    <div class="inv-item">
+      <span class="inv-emoji">🏢</span>
+      <div class="inv-info">
+        <div class="inv-name">${o.name}</div>
+        <div class="inv-meta">${o.type}</div>
+      </div>
+      <button class="del-btn" onclick="removeOrg('${o.firestoreId}')">🗑</button>
+    </div>`).join("");
+}
+window.addOrg = async () => {
+  const name = document.getElementById("org-name").value.trim();
+  const type = document.getElementById("org-type").value;
+  if (!name) { alert("Please enter an organization name."); return; }
+  document.getElementById("org-spinner").classList.add("show");
+  setSyncStatus("syncing");
+  try {
+    await addDoc(orgCol,{ name, type, createdAt:serverTimestamp() });
+    document.getElementById("org-name").value="";
+    document.getElementById("org-spinner").classList.remove("show");
+    setSyncStatus("live");
+  } catch(e) { alert("Error: "+e.message); document.getElementById("org-spinner").classList.remove("show"); setSyncStatus("live"); }
+};
+window.removeOrg = async fid => {
+  if (!confirm("Remove this organization?")) return;
+  setSyncStatus("syncing");
+  try { await deleteDoc(doc(db,"distOrgs",fid)); setSyncStatus("live"); }
+  catch(e) { alert("Error: "+e.message); setSyncStatus("live"); }
+};
+
+/* ── INIT ── */
+updateCart(); renderLog(); renderCatPills();
 </script>
 </body>
 </html>
